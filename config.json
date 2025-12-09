@@ -1,0 +1,13 @@
+{
+    "work_hours": {
+      "start": "09:00",
+      "end": "17:00"
+    },
+    "lunch_time": {
+      "start": "12:00",
+      "end": "13:00"
+    },
+    "meetings_calendar": "primary",
+    "blocks_calendar": "primary",
+    "default_mode": "normal"
+  }

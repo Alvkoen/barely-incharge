@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/Alvkoen/barely-incharge/config"
+	"github.com/Alvkoen/barely-incharge/internal/config"
 	"github.com/spf13/cobra"
 )
 
