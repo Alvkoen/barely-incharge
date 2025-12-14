@@ -14,9 +14,8 @@ const (
 	ModeCrunch = "crunch"
 	ModeNormal = "normal"
 	ModeSaver  = "saver"
-
-	// DateFormat is the expected format for the date field in config (YYYY-MM-DD)
 	DateFormat = "2006-01-02"
+	HTTPTimeout = 30 * time.Second
 )
 
 var ValidModes = []string{ModeCrunch, ModeNormal, ModeSaver}
@@ -28,7 +27,7 @@ type Config struct {
 	BlocksCalendar   string    `json:"blocks_calendar"`
 	DefaultMode      string    `json:"default_mode"`
 	OpenAIAPIKey     string    `json:"openai_api_key"`
-	Date             string    `json:"date"` // YYYY-MM-DD format, empty = today
+	Date             string    `json:"date"`
 }
 
 type TimeRange struct {
@@ -72,7 +71,6 @@ func IsValidMode(mode string) bool {
 	return slices.Contains(ValidModes, mode)
 }
 
-// ValidateMode validates a mode and returns a descriptive error if invalid
 func ValidateMode(mode string) error {
 	if !IsValidMode(mode) {
 		return fmt.Errorf("invalid mode: %s (valid modes: %s)",

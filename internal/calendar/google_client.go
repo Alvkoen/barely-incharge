@@ -35,7 +35,6 @@ func (c *GoogleClient) FetchMeetings(calendarID string, start, end time.Time) ([
 
 	meetings := make([]Event, 0, len(events.Items))
 	for _, event := range events.Items {
-		// Skip all-day events (they don't have DateTime)
 		if event.Start.DateTime == "" {
 			continue
 		}

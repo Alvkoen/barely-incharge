@@ -21,6 +21,11 @@ var taskSizes = map[string]time.Duration{
 	"XL": SizeXL,
 }
 
+type Task struct {
+	Title    string
+	Duration time.Duration
+}
+
 func ParseTaskList(tasksStr string) []Task {
 	parts := strings.Split(tasksStr, ",")
 	tasks := make([]Task, 0, len(parts))

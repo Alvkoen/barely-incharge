@@ -23,7 +23,6 @@ var planCmd = &cobra.Command{
 	Short: "Plan your day with AI-powered focus blocks",
 	Long:  `Create focus and break blocks in your calendar based on your tasks, meetings, and chosen mode (crunch, normal, or saver).`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// Load config
 		cfg, err := config.Load()
 		if err != nil {
 			return fmt.Errorf("failed to load config: %w", err)
@@ -72,24 +71,35 @@ var planCmd = &cobra.Command{
 			return err
 		}
 
-		busyBlocks := make([]planner.TimeBlock, len(meetings))
-		for i, meeting := range meetings {
-			busyBlocks[i] = meeting.ToTimeBlock()
-		}
-
-		planCtx, err := planner.NewContext(
-			selectedMode,
-			cfg.WorkHours.Start, cfg.WorkHours.End,
-			cfg.LunchTime.Start, cfg.LunchTime.End,
-			taskList,
-			busyBlocks,
-			planningDate,
-		)
+		workStart, err := planner.ParseTimeOnDate(cfg.WorkHours.Start, planningDate)
 		if err != nil {
-			return fmt.Errorf("failed to create planning context: %w", err)
+			return fmt.Errorf("invalid work start time: %w", err)
+		}
+		workEnd, err := planner.ParseTimeOnDate(cfg.WorkHours.End, planningDate)
+		if err != nil {
+			return fmt.Errorf("invalid work end time: %w", err)
+		}
+		lunchStart, err := planner.ParseTimeOnDate(cfg.LunchTime.Start, planningDate)
+		if err != nil {
+			return fmt.Errorf("invalid lunch start time: %w", err)
+		}
+		lunchEnd, err := planner.ParseTimeOnDate(cfg.LunchTime.End, planningDate)
+		if err != nil {
+			return fmt.Errorf("invalid lunch end time: %w", err)
 		}
 
-		plan, err := generatePlan(cfg, planCtx)
+		busyBlocks := make([]planner.TimeBlock, 0, len(meetings)+1)
+		busyBlocks = append(busyBlocks, planner.TimeBlock{
+			Type:  planner.BlockTypeLunch,
+			Title: "Lunch",
+			Start: lunchStart,
+			End:   lunchEnd,
+		})
+		for _, meeting := range meetings {
+			busyBlocks = append(busyBlocks, meeting.ToTimeBlock())
+		}
+
+		plan, err := generatePlan(cfg, selectedMode, workStart, workEnd, taskList, busyBlocks)
 		if err != nil {
 			return err
 		}
@@ -109,7 +119,7 @@ var planCmd = &cobra.Command{
 			return fmt.Errorf("failed to parse AI blocks: %w", err)
 		}
 
-		err = validateSchedule(planCtx, parsedBlocks)
+		err = planner.ValidateBlocks(parsedBlocks, busyBlocks)
 		if err != nil {
 			return fmt.Errorf("schedule validation failed: %w", err)
 		}
@@ -172,23 +182,19 @@ func init() {
 	}
 }
 
-func generatePlan(cfg *config.Config, planCtx *planner.Context) (*ai.PlanResponse, error) {
+func generatePlan(cfg *config.Config, mode string, workStart, workEnd time.Time, tasks []planner.Task, busyBlocks []planner.TimeBlock) (*ai.PlanResponse, error) {
 	fmt.Println("\n🤖 Generating plan with AI...")
 
 	client := ai.NewClient(cfg.OpenAIAPIKey)
 	req := ai.PlanRequest{
-		WorkStart:  planCtx.WorkStart,
-		WorkEnd:    planCtx.WorkEnd,
-		BusyBlocks: planCtx.BusyBlocks,
-		Tasks:      planCtx.Tasks,
-		Mode:       planCtx.Mode,
+		WorkStart:  workStart,
+		WorkEnd:    workEnd,
+		BusyBlocks: busyBlocks,
+		Tasks:      tasks,
+		Mode:       mode,
 	}
 
 	return client.GeneratePlan(context.Background(), req)
-}
-
-func validateSchedule(planCtx *planner.Context, parsedBlocks []planner.TimeBlock) error {
-	return planner.ValidateBlocks(parsedBlocks, planCtx.BusyBlocks)
 }
 
 func parseAIBlocks(aiBlocks []ai.Block, date time.Time) ([]planner.TimeBlock, error) {

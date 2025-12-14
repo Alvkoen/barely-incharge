@@ -2,10 +2,15 @@ package planner
 
 import "time"
 
-type Task struct {
-	Title    string
-	Duration time.Duration
-}
+const (
+	BlockTypeLunch   = "lunch"
+	BlockTypeMeeting = "meeting"
+	BlockTypeBreak   = "break"
+	BlockTypeFocus   = "focus"
+
+	// TimeFormat for HH:MM (24-hour)
+	TimeFormat = "15:04"
+)
 
 type TimeBlock struct {
 	Type  string
@@ -36,4 +41,21 @@ func (b TimeBlock) GetCalendarDescription() string {
 	default:
 		return ""
 	}
+}
+
+func ParseTimeOnDate(timeStr string, date time.Time) (time.Time, error) {
+	t, err := time.Parse(TimeFormat, timeStr)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	return time.Date(
+		date.Year(),
+		date.Month(),
+		date.Day(),
+		t.Hour(),
+		t.Minute(),
+		0, 0,
+		date.Location(),
+	), nil
 }

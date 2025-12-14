@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 
-	"github.com/Alvkoen/barely-incharge/internal/httpclient"
+	appconfig "github.com/Alvkoen/barely-incharge/internal/config"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/calendar/v3"
@@ -72,21 +73,20 @@ func getTokenFromWeb(config *oauth2.Config) (*oauth2.Token, error) {
 	return token, nil
 }
 
-// GetClient retrieves an authenticated HTTP client for Google Calendar API
 func GetClient(ctx context.Context) (*calendar.Service, error) {
 	credentials, err := loadCredentials()
 	if err != nil {
 		return nil, err
 	}
 
-	config, err := google.ConfigFromJSON(credentials, calendar.CalendarScope)
+	oauthConfig, err := google.ConfigFromJSON(credentials, calendar.CalendarScope)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse credentials: %w", err)
 	}
 
 	token, err := loadToken()
 	if err != nil {
-		token, err = getTokenFromWeb(config)
+		token, err = getTokenFromWeb(oauthConfig)
 		if err != nil {
 			return nil, err
 		}
@@ -95,9 +95,11 @@ func GetClient(ctx context.Context) (*calendar.Service, error) {
 		}
 	}
 
-	baseHTTPClient := httpclient.New()
+	baseHTTPClient := &http.Client{
+		Timeout: appconfig.HTTPTimeout,
+	}
 	ctxWithClient := context.WithValue(ctx, oauth2.HTTPClient, baseHTTPClient)
-	tokenSource := config.TokenSource(ctxWithClient, token)
+	tokenSource := oauthConfig.TokenSource(ctxWithClient, token)
 	autoSaveSource := &autoSaveTokenSource{source: tokenSource}
 	httpClient := oauth2.NewClient(ctxWithClient, autoSaveSource)
 
