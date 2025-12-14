@@ -11,23 +11,22 @@ import (
 )
 
 const (
-	ModeCrunch = "crunch"
-	ModeNormal = "normal"
-	ModeSaver  = "saver"
-	DateFormat = "2006-01-02"
+	ModeCrunch  = "crunch"
+	ModeNormal  = "normal"
+	ModeSaver   = "saver"
+	DateFormat  = "2006-01-02"
 	HTTPTimeout = 30 * time.Second
 )
 
 var ValidModes = []string{ModeCrunch, ModeNormal, ModeSaver}
 
 type Config struct {
-	WorkHours        TimeRange `json:"work_hours"`
-	LunchTime        TimeRange `json:"lunch_time"`
-	MeetingsCalendar string    `json:"meetings_calendar"`
-	BlocksCalendar   string    `json:"blocks_calendar"`
-	DefaultMode      string    `json:"default_mode"`
-	OpenAIAPIKey     string    `json:"openai_api_key"`
-	Date             string    `json:"date"`
+	WorkHours    TimeRange `json:"work_hours"`
+	LunchTime    TimeRange `json:"lunch_time"`
+	Calendar     string    `json:"calendar"`
+	DefaultMode  string    `json:"default_mode"`
+	OpenAIAPIKey string    `json:"openai_api_key"`
+	Date         string    `json:"date"`
 }
 
 type TimeRange struct {

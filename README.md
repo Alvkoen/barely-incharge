@@ -14,9 +14,9 @@ Barely In Charge reads your tasks and existing meetings, then uses AI to create 
 
 ### How it works
 
-1. **Fetches meetings** - Reads existing meetings from your meetings calendar
+1. **Fetches meetings** - Reads existing meetings from your calendar
 2. **AI planning** - Generates optimal schedule with focus blocks and breaks
-3. **Creates blocks** - Adds all planned blocks to your blocks calendar
+3. **Creates blocks** - Adds all planned blocks to your calendar
 4. **Done!** - Check your calendar to see the schedule
 
 ## Prerequisites
@@ -63,8 +63,7 @@ Create a `config.json` file in the project root:
     "start": "12:00",
     "end": "13:00"
   },
-  "meetings_calendar": "primary",
-  "blocks_calendar": "primary",
+  "calendar": "primary",
   "default_mode": "normal",
   "openai_api_key": "sk-your-api-key-here",
   "date": ""
@@ -75,8 +74,7 @@ Create a `config.json` file in the project root:
 
 - `work_hours` - Your working hours (24-hour format)
 - `lunch_time` - Your lunch break (24-hour format)
-- `meetings_calendar` - Calendar ID to read meetings from (use "primary" for your main calendar)
-- `blocks_calendar` - Calendar ID to create focus blocks in (can be different from meetings calendar)
+- `calendar` - Calendar ID (use "primary" for your main calendar, or a specific calendar ID like "work@example.com")
 - `default_mode` - Default planning mode: `crunch`, `normal`, or `saver`
 - `openai_api_key` - Your OpenAI API key (get one from https://platform.openai.com/api-keys)
 - `date` - Date to plan for in `YYYY-MM-DD` format (leave empty for today, or specify a future date like `2024-12-25`)

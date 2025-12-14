@@ -56,8 +56,7 @@ var planCmd = &cobra.Command{
 		for i, task := range taskList {
 			fmt.Printf("  %d. %s (%d min)\n", i+1, task.Title, int(task.Duration.Minutes()))
 		}
-		fmt.Printf("\nMeetings Calendar: %s\n", cfg.MeetingsCalendar)
-		fmt.Printf("Blocks Calendar: %s\n", cfg.BlocksCalendar)
+		fmt.Printf("\nCalendar: %s\n", cfg.Calendar)
 
 		ctx := context.Background()
 
@@ -66,7 +65,7 @@ var planCmd = &cobra.Command{
 			return err
 		}
 
-		meetings, err := fetchMeetings(calClient, cfg.MeetingsCalendar)
+		meetings, err := fetchMeetings(calClient, cfg.Calendar)
 		if err != nil {
 			return err
 		}
@@ -125,7 +124,7 @@ var planCmd = &cobra.Command{
 		}
 		fmt.Println("✓ No conflicts detected")
 
-		err = createBlocks(calClient, cfg.BlocksCalendar, parsedBlocks)
+		err = createBlocks(calClient, cfg.Calendar, parsedBlocks)
 		if err != nil {
 			return err
 		}
