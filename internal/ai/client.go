@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 )
 
 const openAIURL = "https://api.openai.com/v1/chat/completions"
@@ -73,7 +74,7 @@ func (c *Client) GeneratePlan(ctx context.Context, req PlanRequest) (*PlanRespon
 	}
 	defer func() {
 		if closeErr := resp.Body.Close(); closeErr != nil {
-			fmt.Printf("Warning: failed to close response body: %v\n", closeErr)
+			fmt.Fprintf(os.Stderr, "Warning: failed to close response body: %v\n", closeErr)
 		}
 	}()
 

@@ -24,28 +24,29 @@ func NewContext(
 ) (*Context, error) {
 	now := time.Now()
 
-	workStart, err := parseTimeToday(workStartStr, now)
+	workStart, err := ParseTimeOnDate(workStartStr, now)
 	if err != nil {
 		return nil, fmt.Errorf("invalid work start time: %w", err)
 	}
 
-	workEnd, err := parseTimeToday(workEndStr, now)
+	workEnd, err := ParseTimeOnDate(workEndStr, now)
 	if err != nil {
 		return nil, fmt.Errorf("invalid work end time: %w", err)
 	}
 
-	lunchStart, err := parseTimeToday(lunchStartStr, now)
+	lunchStart, err := ParseTimeOnDate(lunchStartStr, now)
 	if err != nil {
 		return nil, fmt.Errorf("invalid lunch start time: %w", err)
 	}
 
-	lunchEnd, err := parseTimeToday(lunchEndStr, now)
+	lunchEnd, err := ParseTimeOnDate(lunchEndStr, now)
 	if err != nil {
 		return nil, fmt.Errorf("invalid lunch end time: %w", err)
 	}
 
 	allBusyBlocks := make([]TimeBlock, 0, len(busyBlocks)+1)
 	allBusyBlocks = append(allBusyBlocks, TimeBlock{
+		Type:  BlockTypeLunch,
 		Title: "Lunch",
 		Start: lunchStart,
 		End:   lunchEnd,
@@ -63,23 +64,22 @@ func NewContext(
 	}, nil
 }
 
-func ParseTimeToday(timeStr string, baseTime time.Time) (time.Time, error) {
+// ParseTimeOnDate converts a "HH:MM" time string to a full timestamp on the given date.
+// The date parameter ensures all times in a single operation use the same reference date,
+// which is important for consistency and testability.
+func ParseTimeOnDate(timeStr string, date time.Time) (time.Time, error) {
 	t, err := time.Parse("15:04", timeStr)
 	if err != nil {
 		return time.Time{}, err
 	}
 
 	return time.Date(
-		baseTime.Year(),
-		baseTime.Month(),
-		baseTime.Day(),
+		date.Year(),
+		date.Month(),
+		date.Day(),
 		t.Hour(),
 		t.Minute(),
 		0, 0,
-		baseTime.Location(),
+		date.Location(),
 	), nil
-}
-
-func parseTimeToday(timeStr string, baseTime time.Time) (time.Time, error) {
-	return ParseTimeToday(timeStr, baseTime)
 }

@@ -3,14 +3,7 @@ package planner
 import (
 	"fmt"
 	"slices"
-	"time"
 )
-
-type TimeBlock struct {
-	Title string
-	Start time.Time
-	End   time.Time
-}
 
 func ValidateBlocks(blocks []TimeBlock, busyBlocks []TimeBlock) error {
 	allBlocks := make([]TimeBlock, 0, len(blocks)+len(busyBlocks))
@@ -51,12 +44,9 @@ func ValidateBlocks(blocks []TimeBlock, busyBlocks []TimeBlock) error {
 }
 
 func isInList(block TimeBlock, list []TimeBlock) bool {
-	for _, b := range list {
-		if b.Title == block.Title && b.Start.Equal(block.Start) && b.End.Equal(block.End) {
-			return true
-		}
-	}
-	return false
+	return slices.ContainsFunc(list, func(b TimeBlock) bool {
+		return b.Title == block.Title && b.Start.Equal(block.Start) && b.End.Equal(block.End)
+	})
 }
 
 func blocksOverlap(a, b TimeBlock) bool {

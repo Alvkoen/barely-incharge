@@ -2,16 +2,10 @@ package calendar
 
 import "time"
 
-// Event type constants
-const (
-	EventTypeMeeting = "meeting"
-	EventTypeFocus   = "focus"
-	EventTypeBreak   = "break"
-)
-
 // Event represents any calendar event (meeting, focus block, or break)
+// Type should be one of: planner.BlockTypeMeeting, BlockTypeFocus, BlockTypeBreak, or BlockTypeLunch
 type Event struct {
-	Type        string // EventTypeMeeting, EventTypeFocus, or EventTypeBreak
+	Type        string
 	Title       string
 	Description string
 	Start       time.Time

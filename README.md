@@ -2,6 +2,8 @@
 
 An AI-powered calendar block planner that helps you organize your workday with focus blocks and breaks.
 
+**Currently supports Google Calendar only.**
+
 ## What It Does
 
 Barely In Charge reads your tasks and existing meetings, then uses AI to create an optimized schedule with focus blocks and breaks in your Google Calendar. You can choose between different planning modes:
@@ -128,3 +130,7 @@ On first run, the app will open your browser to authenticate with Google Calenda
 - A `token.json` file is created with your credentials
 - Future runs will use this token (no browser popup)
 - The token is valid until you revoke access
+
+## Development
+
+This project was developed in Cursor with AI assistance.

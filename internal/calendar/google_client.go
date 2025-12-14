@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Alvkoen/barely-incharge/internal/planner"
 	"google.golang.org/api/calendar/v3"
 )
 
@@ -50,7 +51,7 @@ func (c *GoogleClient) FetchMeetings(calendarID string, start, end time.Time) ([
 		}
 
 		meeting := Event{
-			Type:        EventTypeMeeting,
+			Type:        planner.BlockTypeMeeting,
 			Title:       event.Summary,
 			Description: event.Description,
 			Start:       startTime,
