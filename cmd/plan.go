@@ -1,9 +1,11 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
+	"github.com/Alvkoen/barely-incharge/internal/calendar"
 	"github.com/Alvkoen/barely-incharge/internal/config"
 	"github.com/spf13/cobra"
 )
@@ -26,7 +28,7 @@ var planCmd = &cobra.Command{
 
 		selectedMode := mode
 		if selectedMode == "" {
-			selectedMode = cfg.DefaultMode 
+			selectedMode = cfg.DefaultMode
 		} else {
 			if err := config.ValidateMode(selectedMode); err != nil {
 				return err
@@ -52,14 +54,44 @@ var planCmd = &cobra.Command{
 		fmt.Printf("\nMeetings Calendar: %s\n", cfg.MeetingsCalendar)
 		fmt.Printf("Blocks Calendar: %s\n", cfg.BlocksCalendar)
 
+		// Authenticate with Google Calendar
+		ctx := context.Background()
+		if err := authenticateCalendar(ctx); err != nil {
+			return err
+		}
+
 		// TODO: Next steps:
-		// 1. Authenticate with Google Calendar
-		// 2. Fetch meetings
-		// 3. Call AI to generate blocks
-		// 4. Create blocks in calendar
+		// 1. Fetch meetings from meetings_calendar
+		// 2. Call AI to generate blocks
+		// 3. Create blocks in blocks_calendar
 
 		return nil
 	},
+}
+
+// authenticateCalendar authenticates with Google Calendar and returns the service
+func authenticateCalendar(ctx context.Context) error {
+	fmt.Println("\n🔐 Authenticating with Google Calendar...")
+
+	calService, err := calendar.GetClient(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to authenticate with Google Calendar: %w", err)
+	}
+
+	fmt.Println("✅ Successfully authenticated!")
+
+	// Test: List available calendars
+	calendarList, err := calService.CalendarList.List().Do()
+	if err != nil {
+		return fmt.Errorf("failed to list calendars: %w", err)
+	}
+
+	fmt.Printf("\n📅 Available calendars (%d):\n", len(calendarList.Items))
+	for _, cal := range calendarList.Items {
+		fmt.Printf("  - %s (ID: %s)\n", cal.Summary, cal.Id)
+	}
+
+	return nil
 }
 
 func init() {
