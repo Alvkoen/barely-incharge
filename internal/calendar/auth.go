@@ -91,8 +91,12 @@ func GetClient(ctx context.Context) (*calendar.Service, error) {
 		}
 	}
 
+	// Create token source that auto-refreshes and auto-saves
+	tokenSource := config.TokenSource(ctx, token)
+	autoSaveSource := &autoSaveTokenSource{source: tokenSource}
+
 	// Create authenticated HTTP client
-	httpClient := config.Client(ctx, token)
+	httpClient := oauth2.NewClient(ctx, autoSaveSource)
 
 	// Create Calendar service
 	service, err := calendar.NewService(ctx, option.WithHTTPClient(httpClient))
@@ -101,4 +105,23 @@ func GetClient(ctx context.Context) (*calendar.Service, error) {
 	}
 
 	return service, nil
+}
+
+type autoSaveTokenSource struct {
+	source oauth2.TokenSource
+}
+
+func (a *autoSaveTokenSource) Token() (*oauth2.Token, error) {
+	token, err := a.source.Token()
+	if err != nil {
+		return nil, err
+	}
+
+	// Save the token (in case it was refreshed)
+	if err := saveToken(token); err != nil {
+		// Log but don't fail - token refresh worked, save is just optimization
+		fmt.Printf("Warning: failed to save refreshed token: %v\n", err)
+	}
+
+	return token, nil
 }
