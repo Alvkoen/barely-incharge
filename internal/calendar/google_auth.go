@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/Alvkoen/barely-incharge/internal/httpclient"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/calendar/v3"
@@ -94,9 +95,12 @@ func GetClient(ctx context.Context) (*calendar.Service, error) {
 		}
 	}
 
-	tokenSource := config.TokenSource(ctx, token)
+	baseHTTPClient := httpclient.New()
+	ctxWithClient := context.WithValue(ctx, oauth2.HTTPClient, baseHTTPClient)
+	tokenSource := config.TokenSource(ctxWithClient, token)
 	autoSaveSource := &autoSaveTokenSource{source: tokenSource}
-	httpClient := oauth2.NewClient(ctx, autoSaveSource)
+	httpClient := oauth2.NewClient(ctxWithClient, autoSaveSource)
+
 	service, err := calendar.NewService(ctx, option.WithHTTPClient(httpClient))
 	if err != nil {
 		return nil, fmt.Errorf("unable to create calendar service: %w", err)

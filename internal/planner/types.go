@@ -2,13 +2,6 @@ package planner
 
 import "time"
 
-const (
-	BlockTypeLunch   = "lunch"
-	BlockTypeMeeting = "meeting"
-	BlockTypeBreak   = "break"
-	BlockTypeFocus   = "focus"
-)
-
 type Task struct {
 	Title    string
 	Duration time.Duration

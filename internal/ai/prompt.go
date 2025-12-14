@@ -3,6 +3,8 @@ package ai
 import (
 	"fmt"
 	"strings"
+
+	"github.com/Alvkoen/barely-incharge/internal/planner"
 )
 
 func BuildPrompt(req PlanRequest) string {
@@ -11,8 +13,8 @@ func BuildPrompt(req PlanRequest) string {
 	sb.WriteString("You are a calendar planning assistant. Create a day schedule with focus blocks and breaks.\n\n")
 
 	sb.WriteString(fmt.Sprintf("Work hours: %s - %s\n",
-		req.WorkStart.Format("15:04"),
-		req.WorkEnd.Format("15:04")))
+		req.WorkStart.Format(planner.TimeFormat),
+		req.WorkEnd.Format(planner.TimeFormat)))
 
 	sb.WriteString("\n")
 
@@ -23,8 +25,8 @@ func BuildPrompt(req PlanRequest) string {
 		for _, block := range req.BusyBlocks {
 			sb.WriteString(fmt.Sprintf("- %s (%s - %s)\n",
 				block.Title,
-				block.Start.Format("15:04"),
-				block.End.Format("15:04")))
+				block.Start.Format(planner.TimeFormat),
+				block.End.Format(planner.TimeFormat)))
 		}
 	}
 	sb.WriteString("\n")

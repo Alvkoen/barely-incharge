@@ -66,7 +66,8 @@ Create a `config.json` file in the project root:
   "meetings_calendar": "primary",
   "blocks_calendar": "primary",
   "default_mode": "normal",
-  "openai_api_key": "sk-your-api-key-here"
+  "openai_api_key": "sk-your-api-key-here",
+  "date": ""
 }
 ```
 
@@ -78,6 +79,7 @@ Create a `config.json` file in the project root:
 - `blocks_calendar` - Calendar ID to create focus blocks in (can be different from meetings calendar)
 - `default_mode` - Default planning mode: `crunch`, `normal`, or `saver`
 - `openai_api_key` - Your OpenAI API key (get one from https://platform.openai.com/api-keys)
+- `date` - Date to plan for in `YYYY-MM-DD` format (leave empty for today, or specify a future date like `2024-12-25`)
 
 ## Usage
 
@@ -123,6 +125,13 @@ Tasks can include an optional size suffix using the format `Task Title:SIZE`:
 # Override with crunch mode
 ./barely-incharge plan -t "Urgent bug fix:M, Code review:S" -m crunch
 ```
+
+**Planning for Future Dates:**
+
+To plan for a date other than today, set the `date` field in `config.json`:
+- Leave empty (`""`) to plan for today (default)
+- Set to `"YYYY-MM-DD"` format to plan for a specific date (e.g., `"2024-12-25"`)
+
 
 ### First Run
 

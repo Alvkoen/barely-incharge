@@ -8,9 +8,14 @@ import (
 	"io"
 	"net/http"
 	"os"
+
+	"github.com/Alvkoen/barely-incharge/internal/httpclient"
 )
 
-const openAIURL = "https://api.openai.com/v1/chat/completions"
+const (
+	openAIURL = "https://api.openai.com/v1/chat/completions"
+	aiModel   = "gpt-5-nano"
+)
 
 type Client struct {
 	apiKey     string
@@ -20,7 +25,7 @@ type Client struct {
 func NewClient(apiKey string) *Client {
 	return &Client{
 		apiKey:     apiKey,
-		httpClient: &http.Client{},
+		httpClient: httpclient.New(),
 	}
 }
 
@@ -46,7 +51,7 @@ func (c *Client) GeneratePlan(ctx context.Context, req PlanRequest) (*PlanRespon
 	prompt := BuildPrompt(req)
 
 	payload := openAIRequest{
-		Model: "gpt-5-nano",
+		Model: aiModel,
 		Messages: []openAIMessage{
 			{
 				Role:    "user",

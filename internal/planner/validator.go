@@ -30,13 +30,13 @@ func ValidateBlocks(blocks []TimeBlock, busyBlocks []TimeBlock) error {
 					plannedBlock = block1
 				}
 				return fmt.Errorf("block '%s' (%s-%s) overlaps with busy time '%s' (%s-%s)",
-					plannedBlock.Title, plannedBlock.Start.Format("15:04"), plannedBlock.End.Format("15:04"),
-					busyBlock.Title, busyBlock.Start.Format("15:04"), busyBlock.End.Format("15:04"))
+					plannedBlock.Title, plannedBlock.Start.Format(TimeFormat), plannedBlock.End.Format(TimeFormat),
+					busyBlock.Title, busyBlock.Start.Format(TimeFormat), busyBlock.End.Format(TimeFormat))
 			}
 
 			return fmt.Errorf("blocks overlap: '%s' (%s-%s) and '%s' (%s-%s)",
-				block1.Title, block1.Start.Format("15:04"), block1.End.Format("15:04"),
-				block2.Title, block2.Start.Format("15:04"), block2.End.Format("15:04"))
+				block1.Title, block1.Start.Format(TimeFormat), block1.End.Format(TimeFormat),
+				block2.Title, block2.Start.Format(TimeFormat), block2.End.Format(TimeFormat))
 		}
 	}
 

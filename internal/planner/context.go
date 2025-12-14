@@ -21,25 +21,25 @@ func NewContext(
 	lunchStartStr, lunchEndStr string,
 	tasks []Task,
 	busyBlocks []TimeBlock,
+	date time.Time,
 ) (*Context, error) {
-	now := time.Now()
 
-	workStart, err := ParseTimeOnDate(workStartStr, now)
+	workStart, err := ParseTimeOnDate(workStartStr, date)
 	if err != nil {
 		return nil, fmt.Errorf("invalid work start time: %w", err)
 	}
 
-	workEnd, err := ParseTimeOnDate(workEndStr, now)
+	workEnd, err := ParseTimeOnDate(workEndStr, date)
 	if err != nil {
 		return nil, fmt.Errorf("invalid work end time: %w", err)
 	}
 
-	lunchStart, err := ParseTimeOnDate(lunchStartStr, now)
+	lunchStart, err := ParseTimeOnDate(lunchStartStr, date)
 	if err != nil {
 		return nil, fmt.Errorf("invalid lunch start time: %w", err)
 	}
 
-	lunchEnd, err := ParseTimeOnDate(lunchEndStr, now)
+	lunchEnd, err := ParseTimeOnDate(lunchEndStr, date)
 	if err != nil {
 		return nil, fmt.Errorf("invalid lunch end time: %w", err)
 	}
@@ -68,7 +68,7 @@ func NewContext(
 // The date parameter ensures all times in a single operation use the same reference date,
 // which is important for consistency and testability.
 func ParseTimeOnDate(timeStr string, date time.Time) (time.Time, error) {
-	t, err := time.Parse("15:04", timeStr)
+	t, err := time.Parse(TimeFormat, timeStr)
 	if err != nil {
 		return time.Time{}, err
 	}

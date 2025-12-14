@@ -43,7 +43,13 @@ var planCmd = &cobra.Command{
 		}
 		taskList := planner.ParseTaskList(tasks)
 
+		planningDate, err := cfg.GetPlanningDate()
+		if err != nil {
+			return fmt.Errorf("failed to parse planning date: %w", err)
+		}
+
 		fmt.Println("🎯 Planning your day...")
+		fmt.Printf("Date: %s\n", planningDate.Format("Monday, January 2, 2006"))
 		fmt.Printf("Mode: %s\n", selectedMode)
 		fmt.Printf("Work Hours: %s - %s\n", cfg.WorkHours.Start, cfg.WorkHours.End)
 		fmt.Printf("Lunch Time: %s - %s\n", cfg.LunchTime.Start, cfg.LunchTime.End)
@@ -55,6 +61,7 @@ var planCmd = &cobra.Command{
 		fmt.Printf("Blocks Calendar: %s\n", cfg.BlocksCalendar)
 
 		ctx := context.Background()
+
 		calClient, err := authenticateCalendar(ctx)
 		if err != nil {
 			return err
@@ -67,12 +74,7 @@ var planCmd = &cobra.Command{
 
 		busyBlocks := make([]planner.TimeBlock, len(meetings))
 		for i, meeting := range meetings {
-			busyBlocks[i] = planner.TimeBlock{
-				Type:  meeting.Type,
-				Title: meeting.Title,
-				Start: meeting.Start,
-				End:   meeting.End,
-			}
+			busyBlocks[i] = meeting.ToTimeBlock()
 		}
 
 		planCtx, err := planner.NewContext(
@@ -81,6 +83,7 @@ var planCmd = &cobra.Command{
 			cfg.LunchTime.Start, cfg.LunchTime.End,
 			taskList,
 			busyBlocks,
+			planningDate,
 		)
 		if err != nil {
 			return fmt.Errorf("failed to create planning context: %w", err)
@@ -101,7 +104,7 @@ var planCmd = &cobra.Command{
 		}
 
 		fmt.Println("\n🔍 Validating schedule...")
-		parsedBlocks, err := parseAIBlocks(plan.Blocks)
+		parsedBlocks, err := parseAIBlocks(plan.Blocks, planningDate)
 		if err != nil {
 			return fmt.Errorf("failed to parse AI blocks: %w", err)
 		}
@@ -152,8 +155,8 @@ func fetchMeetings(client *calendar.GoogleClient, calendarID string) ([]calendar
 			fmt.Printf("  %d. %s (%s - %s)\n",
 				i+1,
 				meeting.Title,
-				meeting.Start.Format("15:04"),
-				meeting.End.Format("15:04"))
+				meeting.Start.Format(planner.TimeFormat),
+				meeting.End.Format(planner.TimeFormat))
 		}
 	}
 
@@ -188,12 +191,11 @@ func validateSchedule(planCtx *planner.Context, parsedBlocks []planner.TimeBlock
 	return planner.ValidateBlocks(parsedBlocks, planCtx.BusyBlocks)
 }
 
-func parseAIBlocks(aiBlocks []ai.Block) ([]planner.TimeBlock, error) {
-	now := time.Now()
+func parseAIBlocks(aiBlocks []ai.Block, date time.Time) ([]planner.TimeBlock, error) {
 	blocks := make([]planner.TimeBlock, len(aiBlocks))
 
 	for i, block := range aiBlocks {
-		timeBlock, err := block.ToTimeBlock(now)
+		timeBlock, err := block.ToTimeBlock(date)
 		if err != nil {
 			return nil, fmt.Errorf("invalid block %d: %w", i+1, err)
 		}
