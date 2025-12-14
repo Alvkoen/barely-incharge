@@ -5,7 +5,17 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
+	"strings"
 )
+
+const (
+	ModeCrunch = "crunch"
+	ModeNormal = "normal"
+	ModeSaver  = "saver"
+)
+
+var ValidModes = []string{ModeCrunch, ModeNormal, ModeSaver}
 
 type Config struct {
 	WorkHours        TimeRange `json:"work_hours"`
@@ -25,7 +35,7 @@ func GetConfigPath() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to get executable path: %w", err)
 	}
-	
+
 	execDir := filepath.Dir(execPath)
 	return filepath.Join(execDir, "config.json"), nil
 }
@@ -45,5 +55,31 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
 
+	// Validate the loaded config
+	if err := cfg.Validate(); err != nil {
+		return nil, err
+	}
+
 	return &cfg, nil
+}
+
+func IsValidMode(mode string) bool {
+	return slices.Contains(ValidModes, mode)
+}
+
+// ValidateMode validates a mode and returns a descriptive error if invalid
+func ValidateMode(mode string) error {
+	if !IsValidMode(mode) {
+		return fmt.Errorf("invalid mode: %s (valid modes: %s)",
+			mode, strings.Join(ValidModes, ", "))
+	}
+	return nil
+}
+
+func (c *Config) Validate() error {
+	if err := ValidateMode(c.DefaultMode); err != nil {
+		return fmt.Errorf("invalid default_mode in config: %w", err)
+	}
+	//todo other validations here
+	return nil
 }

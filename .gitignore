@@ -8,3 +8,7 @@ barely-incharge
 
 # OS
 .DS_Store
+
+# Google credentials
+credentials.json
+token.json
