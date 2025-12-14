@@ -114,7 +114,9 @@ func init() {
 	rootCmd.AddCommand(planCmd)
 	planCmd.Flags().StringVarP(&tasks, "tasks", "t", "", "Comma-separated list of tasks to accomplish (required)")
 	planCmd.Flags().StringVarP(&mode, "mode", "m", "", "Planning mode: crunch, normal, or saver (default from config)")
-	planCmd.MarkFlagRequired("tasks")
+	if err := planCmd.MarkFlagRequired("tasks"); err != nil {
+		panic(err)
+	}
 }
 
 func parseTaskList(tasksStr string) []string {

@@ -28,7 +28,11 @@ func saveToken(token *oauth2.Token) error {
 	if err != nil {
 		return fmt.Errorf("unable to create token file: %w", err)
 	}
-	defer f.Close()
+	defer func() {
+		if closeErr := f.Close(); closeErr != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to close token file: %v\n", closeErr)
+		}
+	}()
 
 	return json.NewEncoder(f).Encode(token)
 }
@@ -38,7 +42,11 @@ func loadToken() (*oauth2.Token, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
+	defer func() {
+		if closeErr := f.Close(); closeErr != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to close token file: %v\n", closeErr)
+		}
+	}()
 
 	token := &oauth2.Token{}
 	err = json.NewDecoder(f).Decode(token)
