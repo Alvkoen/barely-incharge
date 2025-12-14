@@ -78,25 +78,38 @@ Create a `config.json` file in the project root:
 ### Plan Your Day
 
 ```bash
-./barely-incharge plan --tasks "Write documentation, Review PRs, Team meeting prep"
+./barely-incharge plan --tasks "Write documentation:L, Review PRs:S, Team meeting prep:M"
 ```
 
 **Flags:**
 
-- `-t, --tasks` - Comma-separated list of tasks (required)
+- `-t, --tasks` - Comma-separated list of tasks with optional size (required)
 - `-m, --mode` - Override the default planning mode (optional)
+
+**Task Sizes (T-Shirt Sizing):**
+
+Tasks can include an optional size suffix using the format `Task Title:SIZE`:
+
+- `XS` - 10 minutes (quick fixes, small updates)
+- `S` - 15 minutes (code reviews, short meetings)
+- `M` - 30 minutes (default if no size specified)
+- `L` - 60 minutes (feature development, deep work)
+- `XL` - 90 minutes (complex features, major refactoring)
 
 **Examples:**
 
 ```bash
-# Use default mode from config
+# Tasks with sizes
+./barely-incharge plan -t "Write docs:L, Review PRs:S, Quick fix:XS"
+
+# Tasks without sizes default to M (30 min)
 ./barely-incharge plan -t "Code feature X, Write tests, Deploy"
 
-# Override with crunch mode
-./barely-incharge plan -t "Urgent bug fix, Code review" -m crunch
+# Mixed sizes and modes
+./barely-incharge plan -t "Deep work:XL, Coffee break:XS" -m saver
 
-# Use energy saver mode with longer breaks
-./barely-incharge plan -t "Study Go, Workout, Deep work session" -m saver
+# Override with crunch mode
+./barely-incharge plan -t "Urgent bug fix:M, Code review:S" -m crunch
 ```
 
 ### First Run

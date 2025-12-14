@@ -4,11 +4,33 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/Alvkoen/barely-incharge/internal/calendar"
 	"github.com/Alvkoen/barely-incharge/internal/config"
 	"github.com/spf13/cobra"
 )
+
+const (
+	SizeXS = 10 * time.Minute
+	SizeS  = 15 * time.Minute
+	SizeM  = 30 * time.Minute
+	SizeL  = 60 * time.Minute
+	SizeXL = 90 * time.Minute
+)
+
+var taskSizes = map[string]time.Duration{
+	"XS": SizeXS,
+	"S":  SizeS,
+	"M":  SizeM,
+	"L":  SizeL,
+	"XL": SizeXL,
+}
+
+type Task struct {
+	Title    string
+	Duration time.Duration
+}
 
 var (
 	tasks string
@@ -46,7 +68,7 @@ var planCmd = &cobra.Command{
 		fmt.Printf("Lunch Time: %s - %s\n", cfg.LunchTime.Start, cfg.LunchTime.End)
 		fmt.Printf("Tasks (%d):\n", len(taskList))
 		for i, task := range taskList {
-			fmt.Printf("  %d. %s\n", i+1, task)
+			fmt.Printf("  %d. %s (%d min)\n", i+1, task.Title, int(task.Duration.Minutes()))
 		}
 		fmt.Printf("\nMeetings Calendar: %s\n", cfg.MeetingsCalendar)
 		fmt.Printf("Blocks Calendar: %s\n", cfg.BlocksCalendar)
@@ -119,16 +141,38 @@ func init() {
 	}
 }
 
-func parseTaskList(tasksStr string) []string {
+func parseTaskList(tasksStr string) []Task {
 	parts := strings.Split(tasksStr, ",")
-	tasks := make([]string, 0, len(parts))
+	tasks := make([]Task, 0, len(parts))
 
-	for _, task := range parts {
-		trimmed := strings.TrimSpace(task)
-		if trimmed != "" {
-			tasks = append(tasks, trimmed)
+	for _, taskStr := range parts {
+		trimmed := strings.TrimSpace(taskStr)
+		if trimmed == "" {
+			continue
 		}
+
+		title, duration := parseTask(trimmed)
+		tasks = append(tasks, Task{
+			Title:    title,
+			Duration: duration,
+		})
 	}
 
 	return tasks
+}
+
+func parseTask(taskStr string) (string, time.Duration) {
+	parts := strings.Split(taskStr, ":")
+	if len(parts) == 1 {
+		return strings.TrimSpace(parts[0]), SizeM
+	}
+
+	title := strings.TrimSpace(parts[0])
+	sizeStr := strings.TrimSpace(strings.ToUpper(parts[1]))
+
+	if duration, ok := taskSizes[sizeStr]; ok {
+		return title, duration
+	}
+
+	return taskStr, SizeM
 }
