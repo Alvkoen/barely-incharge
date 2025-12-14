@@ -1,4 +1,4 @@
-package cmd
+package planner
 
 import (
 	"reflect"
@@ -91,9 +91,9 @@ func TestParseTaskList(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := parseTaskList(tt.input)
+			result := ParseTaskList(tt.input)
 			if !reflect.DeepEqual(result, tt.expected) {
-				t.Errorf("parseTaskList(%q) = %v, want %v", tt.input, result, tt.expected)
+				t.Errorf("ParseTaskList(%q) = %v, want %v", tt.input, result, tt.expected)
 			}
 		})
 	}
@@ -114,9 +114,9 @@ func TestParseTaskListLength(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := parseTaskList(tt.input)
+			result := ParseTaskList(tt.input)
 			if len(result) != tt.expectedCount {
-				t.Errorf("parseTaskList(%q) returned %d tasks, want %d", tt.input, len(result), tt.expectedCount)
+				t.Errorf("ParseTaskList(%q) returned %d tasks, want %d", tt.input, len(result), tt.expectedCount)
 			}
 		})
 	}
@@ -124,7 +124,7 @@ func TestParseTaskListLength(t *testing.T) {
 
 func TestParseTaskListPreservesContent(t *testing.T) {
 	input := "Write code:L,Test with numbers 12345:S"
-	result := parseTaskList(input)
+	result := ParseTaskList(input)
 
 	if len(result) != 2 {
 		t.Fatalf("Expected 2 tasks, got %d", len(result))
@@ -158,7 +158,7 @@ func TestParseTaskSizes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := parseTaskList(tt.input)
+			result := ParseTaskList(tt.input)
 			if len(result) != 1 {
 				t.Fatalf("Expected 1 task, got %d", len(result))
 			}

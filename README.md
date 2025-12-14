@@ -14,6 +14,7 @@ Barely In Charge reads your tasks and existing meetings, then uses AI to create 
 
 - Go 1.21 or higher
 - Google Calendar API credentials
+- OpenAI API key
 
 ## Setup
 
@@ -55,7 +56,8 @@ Create a `config.json` file in the project root:
   },
   "meetings_calendar": "primary",
   "blocks_calendar": "primary",
-  "default_mode": "normal"
+  "default_mode": "normal",
+  "openai_api_key": "sk-your-api-key-here"
 }
 ```
 
@@ -66,6 +68,7 @@ Create a `config.json` file in the project root:
 - `meetings_calendar` - Calendar ID to read meetings from (use "primary" for your main calendar)
 - `blocks_calendar` - Calendar ID to create focus blocks in (can be different from meetings calendar)
 - `default_mode` - Default planning mode: `crunch`, `normal`, or `saver`
+- `openai_api_key` - Your OpenAI API key (get one from https://platform.openai.com/api-keys)
 
 ## Usage
 
@@ -118,7 +121,3 @@ On first run, the app will open your browser to authenticate with Google Calenda
 - A `token.json` file is created with your credentials
 - Future runs will use this token (no browser popup)
 - The token is valid until you revoke access
-
-## Project Status
-
-🚧 **In Development** 

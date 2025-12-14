@@ -23,6 +23,7 @@ type Config struct {
 	MeetingsCalendar string    `json:"meetings_calendar"`
 	BlocksCalendar   string    `json:"blocks_calendar"`
 	DefaultMode      string    `json:"default_mode"`
+	OpenAIAPIKey     string    `json:"openai_api_key"`
 }
 
 type TimeRange struct {
@@ -63,6 +64,7 @@ func Load() (*Config, error) {
 	cfg.WorkHours.End = strings.TrimSpace(cfg.WorkHours.End)
 	cfg.LunchTime.Start = strings.TrimSpace(cfg.LunchTime.Start)
 	cfg.LunchTime.End = strings.TrimSpace(cfg.LunchTime.End)
+	cfg.OpenAIAPIKey = strings.TrimSpace(cfg.OpenAIAPIKey)
 
 	if err := cfg.Validate(); err != nil {
 		return nil, err

@@ -6,31 +6,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Alvkoen/barely-incharge/internal/ai"
 	"github.com/Alvkoen/barely-incharge/internal/calendar"
 	"github.com/Alvkoen/barely-incharge/internal/config"
+	"github.com/Alvkoen/barely-incharge/internal/planner"
 	"github.com/spf13/cobra"
 )
-
-const (
-	SizeXS = 10 * time.Minute
-	SizeS  = 15 * time.Minute
-	SizeM  = 30 * time.Minute
-	SizeL  = 60 * time.Minute
-	SizeXL = 90 * time.Minute
-)
-
-var taskSizes = map[string]time.Duration{
-	"XS": SizeXS,
-	"S":  SizeS,
-	"M":  SizeM,
-	"L":  SizeL,
-	"XL": SizeXL,
-}
-
-type Task struct {
-	Title    string
-	Duration time.Duration
-}
 
 var (
 	tasks string
@@ -60,7 +41,7 @@ var planCmd = &cobra.Command{
 		if tasks == "" {
 			return fmt.Errorf("--tasks flag is required")
 		}
-		taskList := parseTaskList(tasks)
+		taskList := planner.ParseTaskList(tasks)
 
 		fmt.Println("🎯 Planning your day...")
 		fmt.Printf("Mode: %s\n", selectedMode)
@@ -84,12 +65,19 @@ var planCmd = &cobra.Command{
 			return err
 		}
 
-		// TODO: Next steps:
-		// 1. Call AI to generate blocks based on meetings + tasks + mode
-		// 2. Create blocks in blocks_calendar
+		plan, err := generatePlan(cfg, selectedMode, taskList, meetings)
+		if err != nil {
+			return err
+		}
 
-		// Prevent unused variable error
-		_ = meetings
+		fmt.Printf("\n✨ Generated %d blocks:\n", len(plan.Blocks))
+		for i, block := range plan.Blocks {
+			icon := "🎯"
+			if block.Type == "break" {
+				icon = "☕"
+			}
+			fmt.Printf("  %d. %s %s (%s - %s)\n", i+1, icon, block.Title, block.Start, block.End)
+		}
 
 		return nil
 	},
@@ -141,38 +129,80 @@ func init() {
 	}
 }
 
-func parseTaskList(tasksStr string) []Task {
-	parts := strings.Split(tasksStr, ",")
-	tasks := make([]Task, 0, len(parts))
+func generatePlan(cfg *config.Config, mode string, tasks []planner.Task, meetings []calendar.Event) (*ai.PlanResponse, error) {
+	now := time.Now()
 
-	for _, taskStr := range parts {
-		trimmed := strings.TrimSpace(taskStr)
-		if trimmed == "" {
-			continue
+	workStart, err := parseTimeToday(cfg.WorkHours.Start, now)
+	if err != nil {
+		return nil, fmt.Errorf("invalid work start time: %w", err)
+	}
+
+	workEnd, err := parseTimeToday(cfg.WorkHours.End, now)
+	if err != nil {
+		return nil, fmt.Errorf("invalid work end time: %w", err)
+	}
+
+	lunchStart, err := parseTimeToday(cfg.LunchTime.Start, now)
+	if err != nil {
+		return nil, fmt.Errorf("invalid lunch start time: %w", err)
+	}
+
+	lunchEnd, err := parseTimeToday(cfg.LunchTime.End, now)
+	if err != nil {
+		return nil, fmt.Errorf("invalid lunch end time: %w", err)
+	}
+
+	aiTasks := make([]ai.Task, len(tasks))
+	for i, task := range tasks {
+		aiTasks[i] = ai.Task{
+			Title:    task.Title,
+			Duration: task.Duration,
 		}
+	}
 
-		title, duration := parseTask(trimmed)
-		tasks = append(tasks, Task{
-			Title:    title,
-			Duration: duration,
+	busyBlocks := make([]ai.TimeBlock, 0, len(meetings)+1)
+
+	busyBlocks = append(busyBlocks, ai.TimeBlock{
+		Title: "Lunch",
+		Start: lunchStart,
+		End:   lunchEnd,
+	})
+
+	for _, meeting := range meetings {
+		busyBlocks = append(busyBlocks, ai.TimeBlock{
+			Title: meeting.Title,
+			Start: meeting.Start,
+			End:   meeting.End,
 		})
 	}
 
-	return tasks
+	fmt.Println("\n🤖 Generating plan with AI...")
+
+	client := ai.NewClient(cfg.OpenAIAPIKey)
+	req := ai.PlanRequest{
+		WorkStart:  workStart,
+		WorkEnd:    workEnd,
+		BusyBlocks: busyBlocks,
+		Tasks:      aiTasks,
+		Mode:       mode,
+	}
+
+	return client.GeneratePlan(context.Background(), req)
 }
 
-func parseTask(taskStr string) (string, time.Duration) {
-	parts := strings.Split(taskStr, ":")
-	if len(parts) == 1 {
-		return strings.TrimSpace(parts[0]), SizeM
+func parseTimeToday(timeStr string, baseTime time.Time) (time.Time, error) {
+	t, err := time.Parse("15:04", timeStr)
+	if err != nil {
+		return time.Time{}, err
 	}
 
-	title := strings.TrimSpace(parts[0])
-	sizeStr := strings.TrimSpace(strings.ToUpper(parts[1]))
-
-	if duration, ok := taskSizes[sizeStr]; ok {
-		return title, duration
-	}
-
-	return taskStr, SizeM
+	return time.Date(
+		baseTime.Year(),
+		baseTime.Month(),
+		baseTime.Day(),
+		t.Hour(),
+		t.Minute(),
+		0, 0,
+		baseTime.Location(),
+	), nil
 }
