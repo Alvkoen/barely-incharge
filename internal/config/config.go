@@ -55,7 +55,15 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
 
-	// Validate the loaded config
+	// Trim whitespace from string fields
+	cfg.DefaultMode = strings.TrimSpace(cfg.DefaultMode)
+	cfg.MeetingsCalendar = strings.TrimSpace(cfg.MeetingsCalendar)
+	cfg.BlocksCalendar = strings.TrimSpace(cfg.BlocksCalendar)
+	cfg.WorkHours.Start = strings.TrimSpace(cfg.WorkHours.Start)
+	cfg.WorkHours.End = strings.TrimSpace(cfg.WorkHours.End)
+	cfg.LunchTime.Start = strings.TrimSpace(cfg.LunchTime.Start)
+	cfg.LunchTime.End = strings.TrimSpace(cfg.LunchTime.End)
+
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}

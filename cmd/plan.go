@@ -26,7 +26,7 @@ var planCmd = &cobra.Command{
 			return fmt.Errorf("failed to load config: %w", err)
 		}
 
-		selectedMode := mode
+		selectedMode := strings.TrimSpace(mode)
 		if selectedMode == "" {
 			selectedMode = cfg.DefaultMode
 		} else {
