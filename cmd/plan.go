@@ -38,11 +38,8 @@ var planCmd = &cobra.Command{
 		if tasks == "" {
 			return fmt.Errorf("--tasks flag is required")
 		}
-
-		// Parse tasks into a list
 		taskList := parseTaskList(tasks)
 
-		// Display what we're working with
 		fmt.Println("🎯 Planning your day...")
 		fmt.Printf("Mode: %s\n", selectedMode)
 		fmt.Printf("Work Hours: %s - %s\n", cfg.WorkHours.Start, cfg.WorkHours.End)
@@ -54,58 +51,72 @@ var planCmd = &cobra.Command{
 		fmt.Printf("\nMeetings Calendar: %s\n", cfg.MeetingsCalendar)
 		fmt.Printf("Blocks Calendar: %s\n", cfg.BlocksCalendar)
 
-		// Authenticate with Google Calendar
 		ctx := context.Background()
-		if err := authenticateCalendar(ctx); err != nil {
+		calClient, err := authenticateCalendar(ctx)
+		if err != nil {
+			return err
+		}
+
+		meetings, err := fetchMeetings(calClient, cfg.MeetingsCalendar)
+		if err != nil {
 			return err
 		}
 
 		// TODO: Next steps:
-		// 1. Fetch meetings from meetings_calendar
-		// 2. Call AI to generate blocks
-		// 3. Create blocks in blocks_calendar
+		// 1. Call AI to generate blocks based on meetings + tasks + mode
+		// 2. Create blocks in blocks_calendar
+
+		// Prevent unused variable error
+		_ = meetings
 
 		return nil
 	},
 }
 
-// authenticateCalendar authenticates with Google Calendar and returns the service
-func authenticateCalendar(ctx context.Context) error {
+func authenticateCalendar(ctx context.Context) (*calendar.GoogleClient, error) {
 	fmt.Println("\n🔐 Authenticating with Google Calendar...")
 
-	calService, err := calendar.GetClient(ctx)
+	client, err := calendar.NewGoogleClient(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to authenticate with Google Calendar: %w", err)
+		return nil, fmt.Errorf("failed to authenticate with Google Calendar: %w", err)
 	}
 
 	fmt.Println("✅ Successfully authenticated!")
 
-	// Test: List available calendars
-	calendarList, err := calService.CalendarList.List().Do()
+	return client, nil
+}
+
+func fetchMeetings(client *calendar.GoogleClient, calendarID string) ([]calendar.Event, error) {
+	fmt.Printf("\n📆 Fetching meetings from calendar: %s\n", calendarID)
+
+	meetings, err := client.FetchTodaysMeetings(calendarID)
 	if err != nil {
-		return fmt.Errorf("failed to list calendars: %w", err)
+		return nil, fmt.Errorf("failed to fetch meetings: %w", err)
 	}
 
-	fmt.Printf("\n📅 Available calendars (%d):\n", len(calendarList.Items))
-	for _, cal := range calendarList.Items {
-		fmt.Printf("  - %s (ID: %s)\n", cal.Summary, cal.Id)
+	if len(meetings) == 0 {
+		fmt.Println("  No meetings found for today")
+	} else {
+		fmt.Printf("  Found %d meeting(s):\n", len(meetings))
+		for i, meeting := range meetings {
+			fmt.Printf("  %d. %s (%s - %s)\n",
+				i+1,
+				meeting.Title,
+				meeting.Start.Format("15:04"),
+				meeting.End.Format("15:04"))
+		}
 	}
 
-	return nil
+	return meetings, nil
 }
 
 func init() {
 	rootCmd.AddCommand(planCmd)
-
-	// Define flags
 	planCmd.Flags().StringVarP(&tasks, "tasks", "t", "", "Comma-separated list of tasks to accomplish (required)")
 	planCmd.Flags().StringVarP(&mode, "mode", "m", "", "Planning mode: crunch, normal, or saver (default from config)")
-
-	// Mark tasks as required
 	planCmd.MarkFlagRequired("tasks")
 }
 
-// parseTaskList splits the tasks string by comma and trims whitespace
 func parseTaskList(tasksStr string) []string {
 	parts := strings.Split(tasksStr, ",")
 	tasks := make([]string, 0, len(parts))

@@ -65,40 +65,30 @@ func getTokenFromWeb(config *oauth2.Config) (*oauth2.Token, error) {
 
 // GetClient retrieves an authenticated HTTP client for Google Calendar API
 func GetClient(ctx context.Context) (*calendar.Service, error) {
-	// Load OAuth2 credentials
 	credentials, err := loadCredentials()
 	if err != nil {
 		return nil, err
 	}
 
-	// Parse credentials and create OAuth2 config
 	config, err := google.ConfigFromJSON(credentials, calendar.CalendarScope)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse credentials: %w", err)
 	}
 
-	// Try to load existing token
 	token, err := loadToken()
 	if err != nil {
-		// No token found, get one from web
 		token, err = getTokenFromWeb(config)
 		if err != nil {
 			return nil, err
 		}
-		// Save token for future use
 		if err := saveToken(token); err != nil {
 			return nil, err
 		}
 	}
 
-	// Create token source that auto-refreshes and auto-saves
 	tokenSource := config.TokenSource(ctx, token)
 	autoSaveSource := &autoSaveTokenSource{source: tokenSource}
-
-	// Create authenticated HTTP client
 	httpClient := oauth2.NewClient(ctx, autoSaveSource)
-
-	// Create Calendar service
 	service, err := calendar.NewService(ctx, option.WithHTTPClient(httpClient))
 	if err != nil {
 		return nil, fmt.Errorf("unable to create calendar service: %w", err)
@@ -117,9 +107,7 @@ func (a *autoSaveTokenSource) Token() (*oauth2.Token, error) {
 		return nil, err
 	}
 
-	// Save the token (in case it was refreshed)
 	if err := saveToken(token); err != nil {
-		// Log but don't fail - token refresh worked, save is just optimization
 		fmt.Printf("Warning: failed to save refreshed token: %v\n", err)
 	}
 
