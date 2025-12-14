@@ -108,7 +108,7 @@ func (a *autoSaveTokenSource) Token() (*oauth2.Token, error) {
 	}
 
 	if err := saveToken(token); err != nil {
-		fmt.Printf("Warning: failed to save refreshed token: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Warning: failed to save refreshed token: %v\n", err)
 	}
 
 	return token, nil
