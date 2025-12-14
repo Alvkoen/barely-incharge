@@ -10,6 +10,13 @@ Barely In Charge reads your tasks and existing meetings, then uses AI to create 
 - **normal** - Balanced work and rest periods
 - **saver** - Energy-conscious with longer breaks
 
+### How it works
+
+1. **Fetches meetings** - Reads existing meetings from your meetings calendar
+2. **AI planning** - Generates optimal schedule with focus blocks and breaks
+3. **Creates blocks** - Adds all planned blocks to your blocks calendar
+4. **Done!** - Check your calendar to see the schedule
+
 ## Prerequisites
 
 - Go 1.21 or higher

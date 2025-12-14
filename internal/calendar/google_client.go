@@ -70,3 +70,25 @@ func (c *GoogleClient) FetchTodaysMeetings(calendarID string) ([]Event, error) {
 
 	return c.FetchMeetings(calendarID, startOfDay, endOfDay)
 }
+
+func (c *GoogleClient) CreateEvent(calendarID string, event Event) error {
+	calEvent := &calendar.Event{
+		Summary:     event.Title,
+		Description: event.Description,
+		Start: &calendar.EventDateTime{
+			DateTime: event.Start.Format(time.RFC3339),
+			TimeZone: event.Start.Location().String(),
+		},
+		End: &calendar.EventDateTime{
+			DateTime: event.End.Format(time.RFC3339),
+			TimeZone: event.End.Location().String(),
+		},
+	}
+
+	_, err := c.service.Events.Insert(calendarID, calEvent).Do()
+	if err != nil {
+		return fmt.Errorf("failed to create event: %w", err)
+	}
+
+	return nil
+}

@@ -65,7 +65,27 @@ var planCmd = &cobra.Command{
 			return err
 		}
 
-		plan, err := generatePlan(cfg, selectedMode, taskList, meetings)
+		busyBlocks := make([]planner.TimeBlock, len(meetings))
+		for i, meeting := range meetings {
+			busyBlocks[i] = planner.TimeBlock{
+				Title: meeting.Title,
+				Start: meeting.Start,
+				End:   meeting.End,
+			}
+		}
+
+		planCtx, err := planner.NewContext(
+			selectedMode,
+			cfg.WorkHours.Start, cfg.WorkHours.End,
+			cfg.LunchTime.Start, cfg.LunchTime.End,
+			taskList,
+			busyBlocks,
+		)
+		if err != nil {
+			return fmt.Errorf("failed to create planning context: %w", err)
+		}
+
+		plan, err := generatePlan(cfg, planCtx)
 		if err != nil {
 			return err
 		}
@@ -78,6 +98,20 @@ var planCmd = &cobra.Command{
 			}
 			fmt.Printf("  %d. %s %s (%s - %s)\n", i+1, icon, block.Title, block.Start, block.End)
 		}
+
+		fmt.Println("\n🔍 Validating schedule...")
+		err = validateSchedule(planCtx, plan.Blocks)
+		if err != nil {
+			return fmt.Errorf("schedule validation failed: %w", err)
+		}
+		fmt.Println("✓ No conflicts detected")
+
+		err = createBlocks(calClient, cfg.BlocksCalendar, plan.Blocks)
+		if err != nil {
+			return err
+		}
+
+		fmt.Println("\n✅ Successfully created all blocks in calendar!")
 
 		return nil
 	},
@@ -129,80 +163,110 @@ func init() {
 	}
 }
 
-func generatePlan(cfg *config.Config, mode string, tasks []planner.Task, meetings []calendar.Event) (*ai.PlanResponse, error) {
-	now := time.Now()
-
-	workStart, err := parseTimeToday(cfg.WorkHours.Start, now)
-	if err != nil {
-		return nil, fmt.Errorf("invalid work start time: %w", err)
-	}
-
-	workEnd, err := parseTimeToday(cfg.WorkHours.End, now)
-	if err != nil {
-		return nil, fmt.Errorf("invalid work end time: %w", err)
-	}
-
-	lunchStart, err := parseTimeToday(cfg.LunchTime.Start, now)
-	if err != nil {
-		return nil, fmt.Errorf("invalid lunch start time: %w", err)
-	}
-
-	lunchEnd, err := parseTimeToday(cfg.LunchTime.End, now)
-	if err != nil {
-		return nil, fmt.Errorf("invalid lunch end time: %w", err)
-	}
-
-	aiTasks := make([]ai.Task, len(tasks))
-	for i, task := range tasks {
+func generatePlan(cfg *config.Config, planCtx *planner.Context) (*ai.PlanResponse, error) {
+	aiTasks := make([]ai.Task, len(planCtx.Tasks))
+	for i, task := range planCtx.Tasks {
 		aiTasks[i] = ai.Task{
 			Title:    task.Title,
 			Duration: task.Duration,
 		}
 	}
 
-	busyBlocks := make([]ai.TimeBlock, 0, len(meetings)+1)
-
-	busyBlocks = append(busyBlocks, ai.TimeBlock{
-		Title: "Lunch",
-		Start: lunchStart,
-		End:   lunchEnd,
-	})
-
-	for _, meeting := range meetings {
-		busyBlocks = append(busyBlocks, ai.TimeBlock{
-			Title: meeting.Title,
-			Start: meeting.Start,
-			End:   meeting.End,
-		})
+	aiBusyBlocks := make([]ai.TimeBlock, len(planCtx.BusyBlocks))
+	for i, block := range planCtx.BusyBlocks {
+		aiBusyBlocks[i] = ai.TimeBlock{
+			Title: block.Title,
+			Start: block.Start,
+			End:   block.End,
+		}
 	}
 
 	fmt.Println("\n🤖 Generating plan with AI...")
 
 	client := ai.NewClient(cfg.OpenAIAPIKey)
 	req := ai.PlanRequest{
-		WorkStart:  workStart,
-		WorkEnd:    workEnd,
-		BusyBlocks: busyBlocks,
+		WorkStart:  planCtx.WorkStart,
+		WorkEnd:    planCtx.WorkEnd,
+		BusyBlocks: aiBusyBlocks,
 		Tasks:      aiTasks,
-		Mode:       mode,
+		Mode:       planCtx.Mode,
 	}
 
 	return client.GeneratePlan(context.Background(), req)
 }
 
-func parseTimeToday(timeStr string, baseTime time.Time) (time.Time, error) {
-	t, err := time.Parse("15:04", timeStr)
+func validateSchedule(planCtx *planner.Context, aiBlocks []ai.Block) error {
+	blocks, err := parseAIBlocks(aiBlocks)
 	if err != nil {
-		return time.Time{}, err
+		return err
 	}
 
-	return time.Date(
-		baseTime.Year(),
-		baseTime.Month(),
-		baseTime.Day(),
-		t.Hour(),
-		t.Minute(),
-		0, 0,
-		baseTime.Location(),
-	), nil
+	return planner.ValidateBlocks(blocks, planCtx.BusyBlocks)
+}
+
+func parseAIBlocks(aiBlocks []ai.Block) ([]planner.TimeBlock, error) {
+	now := time.Now()
+	blocks := make([]planner.TimeBlock, len(aiBlocks))
+
+	for i, block := range aiBlocks {
+		startTime, err := planner.ParseTimeToday(block.Start, now)
+		if err != nil {
+			return nil, fmt.Errorf("invalid start time for block %d: %w", i+1, err)
+		}
+
+		endTime, err := planner.ParseTimeToday(block.End, now)
+		if err != nil {
+			return nil, fmt.Errorf("invalid end time for block %d: %w", i+1, err)
+		}
+
+		blocks[i] = planner.TimeBlock{
+			Title: block.Title,
+			Start: startTime,
+			End:   endTime,
+		}
+	}
+
+	return blocks, nil
+}
+
+func createBlocks(client *calendar.GoogleClient, calendarID string, blocks []ai.Block) error {
+	fmt.Println("\n📝 Creating blocks in calendar...")
+
+	now := time.Now()
+
+	for i, block := range blocks {
+		startTime, err := planner.ParseTimeToday(block.Start, now)
+		if err != nil {
+			return fmt.Errorf("invalid start time for block %d: %w", i+1, err)
+		}
+
+		endTime, err := planner.ParseTimeToday(block.End, now)
+		if err != nil {
+			return fmt.Errorf("invalid end time for block %d: %w", i+1, err)
+		}
+
+		var description string
+		switch block.Type {
+		case "focus":
+			description = "Focus block - deep work time"
+		case "break":
+			description = "Break time - rest and recharge"
+		}
+
+		event := calendar.Event{
+			Type:        block.Type,
+			Title:       block.Title,
+			Description: description,
+			Start:       startTime,
+			End:         endTime,
+		}
+
+		if err := client.CreateEvent(calendarID, event); err != nil {
+			return fmt.Errorf("failed to create block '%s': %w", block.Title, err)
+		}
+
+		fmt.Printf("  ✓ Created: %s\n", block.Title)
+	}
+
+	return nil
 }
