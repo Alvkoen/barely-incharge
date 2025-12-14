@@ -12,3 +12,7 @@ barely-incharge
 # Google credentials
 credentials.json
 token.json
+
+# Test coverage
+coverage.out
+*.coverprofile

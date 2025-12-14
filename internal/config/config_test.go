@@ -108,15 +108,13 @@ func TestConfigValidate(t *testing.T) {
 }
 
 func TestValidateModeTrimsWhitespace(t *testing.T) {
-	// Note: Trimming should happen before calling ValidateMode
-	// This test documents that ValidateMode expects already-trimmed input
 	tests := []struct {
 		name      string
 		mode      string
 		expectErr bool
 	}{
 		{"already trimmed", "crunch", false},
-		{"with spaces (not trimmed)", " crunch ", true}, // ValidateMode expects trimmed input
+		{"with spaces (not trimmed)", " crunch ", true},
 	}
 
 	for _, tt := range tests {
@@ -127,6 +125,75 @@ func TestValidateModeTrimsWhitespace(t *testing.T) {
 			}
 			if !tt.expectErr && err != nil {
 				t.Errorf("ValidateMode(%q) expected no error but got: %v", tt.mode, err)
+			}
+		})
+	}
+}
+
+func TestConfigValidate_DateValidation(t *testing.T) {
+	tests := []struct {
+		name      string
+		date      string
+		expectErr bool
+	}{
+		{"empty date is valid", "", false},
+		{"valid date", "2024-12-15", false},
+		{"invalid format", "12/15/2024", true},
+		{"invalid format dashes", "15-12-2024", true},
+		{"invalid date", "2024-13-45", true},
+		{"partial date", "2024-12", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := Config{
+				DefaultMode: "normal",
+				Date:        tt.date,
+			}
+			err := cfg.Validate()
+			if tt.expectErr && err == nil {
+				t.Errorf("Validate() expected error for date %q but got nil", tt.date)
+			}
+			if !tt.expectErr && err != nil {
+				t.Errorf("Validate() expected no error for date %q but got: %v", tt.date, err)
+			}
+		})
+	}
+}
+
+func TestGetPlanningDate(t *testing.T) {
+	tests := []struct {
+		name      string
+		dateStr   string
+		expectErr bool
+	}{
+		{"empty uses today", "", false},
+		{"valid future date", "2025-06-15", false},
+		{"valid past date", "2020-01-01", false},
+		{"invalid format", "invalid", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := Config{
+				DefaultMode: "normal",
+				Date:        tt.dateStr,
+			}
+
+			date, err := cfg.GetPlanningDate()
+
+			if tt.expectErr && err == nil {
+				t.Errorf("GetPlanningDate() expected error but got nil")
+			}
+			if !tt.expectErr && err != nil {
+				t.Errorf("GetPlanningDate() expected no error but got: %v", err)
+			}
+
+			if !tt.expectErr {
+				if date.Hour() != 0 || date.Minute() != 0 || date.Second() != 0 {
+					t.Errorf("GetPlanningDate() should return midnight, got %02d:%02d:%02d",
+						date.Hour(), date.Minute(), date.Second())
+				}
 			}
 		})
 	}
