@@ -8,8 +8,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-
-	"github.com/Alvkoen/barely-incharge/internal/config"
 )
 
 const (
@@ -24,10 +22,8 @@ type Client struct {
 
 func NewClient(apiKey string) *Client {
 	return &Client{
-		apiKey: apiKey,
-		httpClient: &http.Client{
-			Timeout: config.HTTPTimeout,
-		},
+		apiKey:     apiKey,
+		httpClient: &http.Client{},
 	}
 }
 

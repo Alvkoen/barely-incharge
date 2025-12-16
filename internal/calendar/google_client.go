@@ -77,11 +77,9 @@ func (c *GoogleClient) CreateEvent(calendarID string, event Event) error {
 		Description: event.Description,
 		Start: &calendar.EventDateTime{
 			DateTime: event.Start.Format(time.RFC3339),
-			TimeZone: event.Start.Location().String(),
 		},
 		End: &calendar.EventDateTime{
 			DateTime: event.End.Format(time.RFC3339),
-			TimeZone: event.End.Location().String(),
 		},
 	}
 

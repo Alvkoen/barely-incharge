@@ -50,9 +50,12 @@ func BuildPrompt(req PlanRequest) string {
 	sb.WriteString("  ]\n")
 	sb.WriteString("}\n\n")
 
-	sb.WriteString("Rules:\n")
-	sb.WriteString("- Do NOT overlap with busy times\n")
-	sb.WriteString("- Stay within work hours\n")
+	sb.WriteString("CRITICAL RULES:\n")
+	sb.WriteString("- NEVER schedule anything during busy times listed above - these slots are completely unavailable\n")
+	sb.WriteString("- Your blocks must NOT overlap with each other\n")
+	sb.WriteString(fmt.Sprintf("- All blocks must start and end within work hours (%s - %s)\n",
+		req.WorkStart.Format(planner.TimeFormat),
+		req.WorkEnd.Format(planner.TimeFormat)))
 	sb.WriteString("- Use 24-hour format (HH:MM)\n")
 	sb.WriteString("- Types: \"focus\" for tasks, \"break\" for breaks\n")
 	sb.WriteString("- Return ONLY the JSON, no explanation or markdown\n")

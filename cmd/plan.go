@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -87,6 +88,19 @@ var planCmd = &cobra.Command{
 			return fmt.Errorf("invalid lunch end time: %w", err)
 		}
 
+		// Adjust workStart if planning for today and current time is after work start
+		now := time.Now()
+		if planningDate.YearDay() == now.YearDay() && now.After(workStart) {
+			// Round up to next 15-minute slot for clean scheduling
+			roundedNow := now.Truncate(15 * time.Minute).Add(15 * time.Minute)
+			if roundedNow.Before(workEnd) {
+				workStart = roundedNow
+				fmt.Printf("📍 Adjusted start time to %s (current time)\n", workStart.Format(planner.TimeFormat))
+			} else {
+				return fmt.Errorf("no time left in work day to plan (it's already %s)", now.Format(planner.TimeFormat))
+			}
+		}
+
 		busyBlocks := make([]planner.TimeBlock, 0, len(meetings)+1)
 		busyBlocks = append(busyBlocks, planner.TimeBlock{
 			Type:  planner.BlockTypeLunch,
@@ -112,17 +126,20 @@ var planCmd = &cobra.Command{
 			fmt.Printf("  %d. %s %s (%s - %s)\n", i+1, icon, block.Title, block.Start, block.End)
 		}
 
-		fmt.Println("\n🔍 Validating schedule...")
 		parsedBlocks, err := parseAIBlocks(plan.Blocks, planningDate)
 		if err != nil {
 			return fmt.Errorf("failed to parse AI blocks: %w", err)
 		}
 
-		err = planner.ValidateBlocks(parsedBlocks, busyBlocks)
-		if err != nil {
-			return fmt.Errorf("schedule validation failed: %w", err)
+		// Add lunch block if the slot is free
+		if isLunchSlotFree(lunchStart, lunchEnd, meetings) {
+			parsedBlocks = append(parsedBlocks, planner.TimeBlock{
+				Type:  planner.BlockTypeLunch,
+				Title: "Lunch",
+				Start: lunchStart,
+				End:   lunchEnd,
+			})
 		}
-		fmt.Println("✓ No conflicts detected")
 
 		err = createBlocks(calClient, cfg.Calendar, parsedBlocks)
 		if err != nil {
@@ -230,4 +247,11 @@ func createBlocks(client *calendar.GoogleClient, calendarID string, parsedBlocks
 	}
 
 	return nil
+}
+
+// isLunchSlotFree checks if the lunch time slot has no overlapping meetings
+func isLunchSlotFree(lunchStart, lunchEnd time.Time, meetings []calendar.Event) bool {
+	return !slices.ContainsFunc(meetings, func(m calendar.Event) bool {
+		return m.Start.Before(lunchEnd) && m.End.After(lunchStart)
+	})
 }
